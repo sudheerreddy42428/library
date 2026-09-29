@@ -1,0 +1,287 @@
+// server/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      String   @default("STUDENT") // "ADMIN" or "STUDENT"
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student   Student?
+  
+  auditLogs AuditLog[]
+}
+
+model Student {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId        String   @unique
+  department       String?
+  year             String?
+  phone            String?
+  address          String?
+  membershipStatus Boolean  @default(true)
+  profilePhoto     String?
+  
+  issues           BookIssue[]
+  reservations     Reservation[]
+  fines            Fine[]
+  notifications    Notification[]
+  purchaseRequests PurchaseRequest[]
+  seatReservations SeatReservation[]
+  readingActivity  ReadingActivity?
+  libraryCard      DigitalLibraryCard?
+}
+
+model Author {
+  id        Int      @id @default(autoincrement())
+  name      String
+  bio       String?
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Book {
+  id              Int      @id @default(autoincrement())
+  isbn            String   @unique
+  title           String
+  description     String?
+  publisher       String?
+  edition         String?
+  publicationYear Int?
+  quantity        Int      @default(0)
+  availableCopies Int      @default(0)
+  issuedCopies    Int      @default(0)
+  coverImage      String?
+  qrCode          String?  @unique
+  
+  // Physical Location
+  block           String?
+  floor           String?
+  section         String?
+  shelf           String?
+  row             String?
+  rack            String?
+
+  authorId        Int
+  author          Author   @relation(fields: [authorId], references: [id])
+  categoryId      Int
+  category        Category @relation(fields: [categoryId], references: [id])
+
+  issues          BookIssue[]
+  reservations    Reservation[]
+  conditions      BookCondition[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model BookIssue {
+  id              Int           @id @default(autoincrement())
+  studentId       Int
+  student         Student       @relation(fields: [studentId], references: [id])
+  bookId          Int
+  book            Book          @relation(fields: [bookId], references: [id])
+  issueDate       DateTime      @default(now())
+  dueDate         DateTime
+  returnDate      DateTime?
+  status          String        @default("ISSUED") // "ISSUED", "RETURNED", "OVERDUE", "LOST", "DAMAGED"
+  
+  // Renewals
+  renewalCount    Int           @default(0)
+  lastRenewedAt   DateTime?
+  renewals        BookRenewal[]
+
+  issuedById      Int
+  
+  fine            Fine?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model BookRenewal {
+  id          Int       @id @default(autoincrement())
+  issueId     Int
+  issue       BookIssue @relation(fields: [issueId], references: [id])
+  renewedAt   DateTime  @default(now())
+  oldDueDate  DateTime
+  newDueDate  DateTime
+}
+
+model BookCondition {
+  id              Int      @id @default(autoincrement())
+  bookId          Int
+  book            Book     @relation(fields: [bookId], references: [id])
+  status          String   // "AVAILABLE", "ISSUED", "RESERVED", "LOST", "DAMAGED", "UNDER_REPAIR"
+  description     String?
+  replacementCost Float?
+  repairCost      Float?
+  reportedAt      DateTime @default(now())
+  resolvedAt      DateTime?
+  reportedById    Int      // Admin who reported
+}
+
+model Fine {
+  id            Int        @id @default(autoincrement())
+  studentId     Int
+  student       Student    @relation(fields: [studentId], references: [id])
+  issueId       Int        @unique
+  issue         BookIssue  @relation(fields: [issueId], references: [id])
+  amount        Float
+  lateDays      Int
+  finePerDay    Float      @default(5.0)
+  status        String     @default("UNPAID") // "UNPAID", "PAID"
+  paymentDate   DateTime?
+  paymentMethod String?
+  recordedById  Int?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Reservation {
+  id              Int               @id @default(autoincrement())
+  studentId       Int
+  student         Student           @relation(fields: [studentId], references: [id])
+  bookId          Int
+  book            Book              @relation(fields: [bookId], references: [id])
+  reservationDate DateTime          @default(now())
+  status          String            @default("WAITING") // "WAITING", "NOTIFIED", "HELD", "FULFILLED", "EXPIRED", "CANCELLED"
+  queuePosition   Int               @default(0)
+  claimDeadline   DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PurchaseRequest {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  student     Student  @relation(fields: [studentId], references: [id])
+  title       String
+  author      String?
+  isbn        String?
+  category    String?
+  reason      String?
+  description String?
+  status      String   @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "PURCHASED", "FULFILLED"
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SeatOrRoom {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String   // "SEAT" or "ROOM"
+  capacity    Int      @default(1)
+  status      String   @default("AVAILABLE") // "AVAILABLE", "MAINTENANCE"
+  
+  reservations SeatReservation[]
+}
+
+model SeatReservation {
+  id              Int         @id @default(autoincrement())
+  studentId       Int
+  student         Student     @relation(fields: [studentId], references: [id])
+  seatOrRoomId    Int
+  seatOrRoom      SeatOrRoom  @relation(fields: [seatOrRoomId], references: [id])
+  reservationDate DateTime
+  startTime       DateTime
+  endTime         DateTime
+  status          String      @default("RESERVED") // "RESERVED", "OCCUPIED", "COMPLETED", "CANCELLED"
+  
+  createdAt       DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id])
+  message   String
+  isRead    Boolean  @default(false)
+  type      String
+  
+  createdAt DateTime @default(now())
+}
+
+model DigitalResource {
+  id           Int      @id @default(autoincrement())
+  title        String
+  author       String?
+  categoryId   Int?
+  filePath     String
+  fileType     String
+  accessStatus Boolean  @default(true)
+  uploadedById Int
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model DigitalLibraryCard {
+  id          Int      @id @default(autoincrement())
+  studentId   Int      @unique
+  student     Student  @relation(fields: [studentId], references: [id])
+  issueDate   DateTime @default(now())
+  expiryDate  DateTime
+  qrCodeUrl   String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ReadingActivity {
+  id                  Int      @id @default(autoincrement())
+  studentId           Int      @unique
+  student             Student  @relation(fields: [studentId], references: [id])
+  totalBooksBorrowed  Int      @default(0)
+  booksReturned       Int      @default(0)
+  readingStreak       Int      @default(0)
+  monthlyReadingCount Int      @default(0)
+  favoriteCategories  String?  // JSON string or comma separated
+  badges              String?  // JSON string or comma separated
+  
+  updatedAt           DateTime @updatedAt
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  action      String
+  entity      String
+  entityId    String
+  description String
+  timestamp   DateTime @default(now())
+}
+
+model SystemSetting {
+  id              Int      @id @default(autoincrement())
+  maxBooksPerStudent Int      @default(3)
+  loanPeriodDays     Int      @default(14)
+  fineRatePerDay     Float    @default(5.0)
+  updatedAt       DateTime @updatedAt
+}
