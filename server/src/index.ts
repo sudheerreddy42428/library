@@ -44,12 +44,24 @@ app.use('/api/purchase-requests', purchaseRequestRoutes);
 app.use('/api/book-conditions', bookConditionRoutes);
 app.use('/api/settings', settingRoutes);
 
-// Serve static frontend files
-const clientDistPath = path.join(__dirname, '../../client/dist');
-app.use(express.static(clientDistPath));
+// In Vercel, the frontend is served by Vercel's edge network, not Express.
+// We only serve static files locally.
+if (process.env.VERCEL_ENV === undefined) {
+  const clientDistPath = path.join(__dirname, '../../client/dist');
+  app.use(express.static(clientDistPath));
+  
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(clientDistPath, 'index.html'));
+    } else {
+      next();
+    }
+  });
+}
 
-app.use((req, res) => {
-  res.sendFile(path.join(clientDistPath, 'index.html'));
+// 404 Handler for API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ message: 'API Route Not Found' });
 });
 
 // Error Handling Middleware
