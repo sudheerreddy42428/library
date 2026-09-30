@@ -6,7 +6,7 @@ import prisma from '../prisma';
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -38,7 +38,8 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const registerLibrarian = async (req: Request, res: Response) => {
-  const { email, password, name, librarianId, phone, institution, registrationCode } = req.body;
+  const { password, name, librarianId, phone, institution, registrationCode } = req.body;
+  const email = req.body.email.toLowerCase();
   try {
     const validCode = process.env.LIBRARIAN_REGISTRATION_CODE || 'LIBRARY2026';
     if (registrationCode !== validCode) {
@@ -75,7 +76,8 @@ export const registerLibrarian = async (req: Request, res: Response) => {
 };
 
 export const registerStudent = async (req: Request, res: Response) => {
-  const { name, studentId, department, year, email, phone, password, address } = req.body;
+  const { name, studentId, department, year, phone, password, address } = req.body;
+  const email = req.body.email.toLowerCase();
   try {
     const existingEmail = await prisma.user.findUnique({ where: { email } });
     if (existingEmail) return res.status(400).json({ message: 'Email already exists' });
