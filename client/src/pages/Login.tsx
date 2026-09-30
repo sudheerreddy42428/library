@@ -9,8 +9,8 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('admin@library.edu'); // Pre-fill for demo
-  const [password, setPassword] = useState('admin123'); // Pre-fill for demo
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -136,26 +136,6 @@ const Login: React.FC = () => {
           <p className="mt-8 text-center text-sm text-[var(--muted-foreground)]">
             Don't have an account? <Link to="/" className="font-semibold text-[var(--color-primary-600)] hover:underline">Register here</Link>
           </p>
-
-          {/* Demo Credentials Box */}
-          <div className="mt-12 bg-[var(--muted)]/50 rounded-xl p-5 border border-[var(--border)]">
-            <h3 className="text-sm font-semibold text-[var(--foreground)] mb-3 flex items-center">
-              <span className="bg-[var(--foreground)] text-[var(--background)] text-[10px] uppercase px-2 py-0.5 rounded mr-2 tracking-wider">Demo</span> 
-              Test Credentials
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[var(--card)] p-3 rounded-lg border border-[var(--border)] shadow-sm cursor-pointer hover:border-[var(--color-primary-300)] transition-colors" onClick={() => {setEmail('admin@library.edu'); setPassword('admin123');}}>
-                <span className="font-bold text-xs text-[var(--color-primary-600)] dark:text-[var(--color-primary-400)] block mb-1 uppercase tracking-wider">Admin</span>
-                <p className="text-xs text-[var(--foreground)] font-mono">admin@library.edu</p>
-                <p className="text-xs text-[var(--muted-foreground)] font-mono mt-0.5">admin123</p>
-              </div>
-              <div className="bg-[var(--card)] p-3 rounded-lg border border-[var(--border)] shadow-sm cursor-pointer hover:border-[var(--color-primary-300)] transition-colors" onClick={() => {setEmail('student1@library.edu'); setPassword('student123');}}>
-                <span className="font-bold text-xs text-[var(--color-success-600)] dark:text-[var(--color-success-400)] block mb-1 uppercase tracking-wider">Student</span>
-                <p className="text-xs text-[var(--foreground)] font-mono">student1@library.edu</p>
-                <p className="text-xs text-[var(--muted-foreground)] font-mono mt-0.5">student123</p>
-              </div>
-            </div>
-          </div>
           
         </div>
       </div>
